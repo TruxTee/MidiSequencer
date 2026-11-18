@@ -1,0 +1,14 @@
+[Unit]
+Description=rtpmidid: network MIDI (RTP-MIDI) for the sequencer
+Wants=network-online.target avahi-daemon.service
+After=network-online.target avahi-daemon.service sound.target
+
+[Service]
+User=flo
+ExecStart=/usr/local/bin/rtpmidid --ini /home/flo/seq/rtpmidid.ini
+RuntimeDirectory=rtpmidid
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target

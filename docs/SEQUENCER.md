@@ -1,6 +1,6 @@
 # MIDI Sequencer — Design Document
 
-**Version:** 0.25
+**Version:** 0.26
 **Stage:** Build, opened by the owner on 2026-11-18. Scope: Milestone 1.
 Any return to discussion pauses building until the owner reopens the build stage.
 
@@ -72,7 +72,9 @@ Consequence: the core must make new ideas cheap to try. Extensibility is a first
 - **Network MIDI:** RTP-MIDI (confirmed). Laptop: rtpMIDI driver. Pi: `rtpmidid` daemon.
   The engine only talks to local ALSA MIDI ports; USB, network and later DIN look the same to it.
   `rtpmidid` v26.01 verified on the Zero W (2026-11-18): built from source on the Pi (67 min), needs
-  `pi/rtpmidid-v26.01-32bit-formatter.patch`. Config `pi/rtpmidid.ini`: listener "seqpi" for PCR32,
+  `pi/rtpmidid-v26.01-32bit-formatter.patch` and `pi/rtpmidid-v26.01-ck-timeout.patch` (accepted
+  sessions without clock sync are dropped after 30 s; upstream's 60 s timer was lost whenever a
+  session moved inside the server's vector, so vanished clients stayed forever). Config `pi/rtpmidid.ini`: listener "seqpi" for PCR32,
   laptop connected by IP as ALSA port "Laptop".
 - **Laptop VST host:** Cantabile Lite (decided). Fallback: Carla. Free-edition limits still to check.
 
@@ -96,9 +98,12 @@ Consequence: the core must make new ideas cheap to try. Extensibility is a first
 - **Autosave and resume:** A few seconds after the last edit, the engine saves its full state.
   After a power cut it boots back to exactly that state, transport stopped, ready to play.
   At most the last few seconds of tweaks are lost.
-- **Deploy:** One command on the workstation cross-compiles, copies the engine to the Pi over SSH
-  (same LAN), keeps the previous version beside it, and restarts the engine. One command rolls back.
-  The engine runs as a systemd service: starts at boot, restarts on crash.
+- **Deploy:** `scripts/deploy-pi.sh` cross-compiles, copies the engine to the Pi over SSH (same LAN),
+  keeps the previous binary as `seq-engine.prev`, installs config and units from `pi/`, restarts.
+  `scripts/deploy-pi.sh --rollback` swaps the previous binary back.
+  Services `rtpmidid` and `seq-engine` (systemd, user flo) start at boot and restart 1 s after a
+  crash. On SIGTERM the engine sends MIDI Stop, releases notes and saves before it exits.
+  Ports that vanish and return (phone, laptop, later USB) are reconnected at runtime.
 - **Development on Windows:** The engine also runs on the Windows workstation for development and tests.
   - Sequencing core is plain Rust with no OS calls; automated tests run here, timing against a simulated clock.
   - MIDI through `midir` (ALSA on Linux, WinMM on Windows). Windows needs loopMIDI for virtual ports.
@@ -137,11 +142,11 @@ Hardware details (BCR32 included) are unknown, so the engine never sees raw devi
 ## 7. Notes: small jobs for the next build
 Small fixes the owner has approved. They are collected here and done together in the next build,
 then removed from this list.
-- rtpmidid: drop an accepted session that has been silent for 30 s (PCR32 pings every 10 s).
-  A killed app never sends BY, so dead "PCR32" ports pile up. Second patch beside
-  `pi/rtpmidid-v26.01-32bit-formatter.patch`.
+(empty)
 
 ## Changelog
+- 0.26 (2026-11-18): Services, clean shutdown and deploy script recorded; notes item (rtpmidid
+  silent-session timeout) done.
 - 0.25 (2026-11-18): Notes list for small approved jobs; first entry: rtpmidid silent-session timeout.
 - 0.24 (2026-11-18): Engine and rtpmidid running on the Zero W; cross-build recorded. PCR32 tempo
   control (app only) added to the MIDI map.

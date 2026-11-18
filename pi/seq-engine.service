@@ -1,0 +1,17 @@
+[Unit]
+Description=Sequencer engine
+# Ports come and go at runtime and the engine reconnects, so rtpmidid is wanted, not required.
+Wants=rtpmidid.service
+After=rtpmidid.service
+
+[Service]
+User=flo
+WorkingDirectory=/home/flo/seq/engine
+ExecStart=/home/flo/seq/engine/seq-engine --state /home/flo/seq/state.json --routing /home/flo/seq/engine/routing.json --profile /home/flo/seq/profiles/pcr32.json
+# SIGTERM: the engine sends MIDI Stop, releases notes and saves before it exits.
+TimeoutStopSec=5
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target

@@ -44,9 +44,10 @@ class LiveSessionTest {
         // Not "PCR32": the engine must not take this session for the controller.
         val s = RtpMidiSession("LIVENESS test", onMidi = {}, onState = { println("state: $it") })
         assertTrue("session refused", s.connect(host, 5004))
-        for (i in 1..8) {
+        // Longer than rtpmidid's 30 s timeout for sessions without clock sync.
+        for (i in 1..35) {
             Thread.sleep(1000)
-            println("t=${i}s alive=${s.isAlive()}")
+            assertTrue("dropped at ${i}s", s.isAlive())
         }
         val alive = s.isAlive()
         s.close()

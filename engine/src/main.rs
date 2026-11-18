@@ -10,6 +10,7 @@ use seq_engine::sequencer::{Event, Sequencer};
 use seq_engine::state::{load, save_atomic, Autosave, State};
 use seq_engine::surface::Surface;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::sync::mpsc::{sync_channel, Receiver, RecvTimeoutError, SyncSender, TrySendError};
 use std::time::{Duration, Instant};
 
@@ -22,6 +23,29 @@ const IDLE_WAIT_NS: u64 = 250_000_000;
 const PORT_SCAN: Duration = Duration::from_millis(500);
 
 type ControlMsg = ([u8; 3], usize);
+
+/// Set by SIGTERM/SIGINT; the main loop then stops the transport and saves before exiting.
+static QUIT: AtomicBool = AtomicBool::new(false);
+
+#[cfg(unix)]
+fn on_quit_signals() {
+    unsafe extern "C" {
+        fn signal(signum: i32, handler: extern "C" fn(i32)) -> usize;
+    }
+    // Only an atomic store: anything more is not safe inside a signal handler.
+    extern "C" fn quit(_: i32) {
+        QUIT.store(true, Ordering::Relaxed);
+    }
+    const SIGINT: i32 = 2;
+    const SIGTERM: i32 = 15;
+    unsafe {
+        signal(SIGINT, quit);
+        signal(SIGTERM, quit);
+    }
+}
+
+#[cfg(not(unix))]
+fn on_quit_signals() {}
 
 fn read_json<T: serde::de::DeserializeOwned>(path: &PathBuf) -> T {
     let data = std::fs::read(path).unwrap_or_else(|e| panic!("cannot read {}: {e}", path.display()));
@@ -137,6 +161,7 @@ fn main() {
         }
     }
 
+    on_quit_signals();
     let (state, outcome) = load(&state_path);
     println!("state {}: {:?}, {} BPM", state_path.display(), outcome, state.bpm_milli as f64 / 1000.0);
     let routing: Routing = read_json(&routing_path);
@@ -180,7 +205,7 @@ fn main() {
     let end = if seconds == 0 { u64::MAX } else { seconds * 1_000_000_000 };
     let mut started = !play;
 
-    while now() < end {
+    while now() < end && !QUIT.load(Ordering::Relaxed) {
         if let Some(w) = latest(&wiring_rx) {
             needs_refresh |= io.apply(w, &routing, &in_tx);
         }

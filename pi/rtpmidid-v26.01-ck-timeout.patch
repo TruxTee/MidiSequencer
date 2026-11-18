@@ -1,0 +1,78 @@
+diff --git a/include/rtpmidid/rtpserverpeer.hpp b/include/rtpmidid/rtpserverpeer.hpp
+index c89e7c6..0fb017c 100644
+--- a/include/rtpmidid/rtpserverpeer.hpp
++++ b/include/rtpmidid/rtpserverpeer.hpp
+@@ -20,6 +20,7 @@
+ #pragma once
+ 
+ #include "rtppeer.hpp"
++#include <chrono>
+ #include <rtpmidid/networkaddress.hpp>
+ #include <rtpmidid/utils.hpp>
+ 
+@@ -42,6 +43,8 @@ public:
+   rtppeer_t::midi_event_t::connection_t midi_event_connection;
+ 
+   poller_t::timer_t timer_connection;
++  // When a connected peer without clock sync is dropped. Kept across moves.
++  std::chrono::steady_clock::time_point ck_deadline;
+ 
+ public:
+   rtpserverpeer_t(io_bytes_reader &&buffer, const network_address_t &addr,
+@@ -55,5 +58,6 @@ public:
+   void sendto(const io_bytes_reader &buff, rtppeer_t::port_e port);
+   void status_change(rtppeer_t::status_e st);
+   void rearm_ck_timeout();
++  void arm_ck_timer();
+ };
+ } // namespace rtpmidid
+\ No newline at end of file
+diff --git a/lib/rtpserverpeer.cpp b/lib/rtpserverpeer.cpp
+index e2266a9..33b0bf3 100644
+--- a/lib/rtpserverpeer.cpp
++++ b/lib/rtpserverpeer.cpp
+@@ -85,11 +85,19 @@ rtpserverpeer_t::~rtpserverpeer_t() {
+ }
+ 
+ void rtpserverpeer_t::rearm_ck_timeout() {
+-  timer_connection.disable();
++  // If no signal in 30 secs, remove the peer
++  ck_deadline = std::chrono::steady_clock::now() + std::chrono::seconds(30);
++  arm_ck_timer();
++}
+ 
+-  // If no signal in 60 secs, remove the peer
+-  timer_connection = poller.add_timer_event(std::chrono::seconds(60),
+-                                            [this]() { peer->disconnect(); });
++void rtpserverpeer_t::arm_ck_timer() {
++  timer_connection.disable();
++  auto left = std::chrono::duration_cast<std::chrono::milliseconds>(
++      ck_deadline - std::chrono::steady_clock::now());
++  if (left.count() < 0)
++    left = std::chrono::milliseconds(0);
++  timer_connection =
++      poller.add_timer_event(left, [this]() { peer->disconnect(); });
+ }
+ 
+ rtpserverpeer_t &rtpserverpeer_t::operator=(rtpserverpeer_t &&other) {
+@@ -98,6 +106,7 @@ rtpserverpeer_t &rtpserverpeer_t::operator=(rtpserverpeer_t &&other) {
+   this->address = std::move(other.address);
+   this->server = std::move(other.server);
+   this->peer = std::move(other.peer);
++  this->ck_deadline = other.ck_deadline;
+ 
+   other.send_event_connection.disconnect();
+   other.status_change_event_connection.disconnect();
+@@ -107,6 +116,12 @@ rtpserverpeer_t &rtpserverpeer_t::operator=(rtpserverpeer_t &&other) {
+   other.id = -1;
+ 
+   setup_connections();
++  // setup_connections() armed the 5 s connect timer, which does nothing once
++  // connected. Without this, a peer moved inside the server vector (whenever a
++  // peer is added or removed) never times out and a vanished client stays forever.
++  // Re-arm with the time left, so moves do not extend the deadline.
++  if (peer->status == rtppeer_t::CONNECTED)
++    arm_ck_timer();
+ 
+   return *this;
+ }
