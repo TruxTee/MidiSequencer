@@ -83,6 +83,21 @@ class CodecTest {
         assertFalse(s.apply(bytes(0xBF, 100, 1))) // unmapped
     }
 
+    @Test fun tempoTurnUsesCc91() {
+        assertArrayEquals(bytes(0xBF, 91, 3), Pcr32Map.tempo(3))
+        assertArrayEquals(bytes(0xBF, 91, 126), Pcr32Map.tempo(-2))
+    }
+
+    @Test fun tempoFeedbackIsPitchBendOnChannel16() {
+        val s = SurfaceState()
+        assertTrue(s.apply(bytes(0xEF, 2, 1))) // 1*128 + 2
+        assertEquals(130, s.bpm)
+        assertFalse(s.apply(bytes(0xE0, 5, 0))) // other channel
+        assertEquals(130, s.bpm)
+        val p = rtpHeader() + bytes(3, 0xEF, 20, 0) // survives the RTP parser
+        assertArrayEquals(bytes(0xEF, 20, 0), RtpCodec.parseMidi(p, p.size).single())
+    }
+
     @Test fun noteNames() {
         assertEquals("C4", noteName(60))
         assertEquals("C#-1", noteName(1))

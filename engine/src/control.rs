@@ -28,6 +28,8 @@ pub enum Control {
     TrackButton { index: u8, pressed: bool },
     Transport { which: Transport, pressed: bool },
     Footswitch { index: u8, pressed: bool },
+    /// Relative tempo change in whole BPM.
+    Tempo { delta: i8 },
 }
 
 /// What the engine shows on the device: ring values and button lights.
@@ -38,6 +40,8 @@ pub enum Feedback {
     ParamLed { index: u8, on: bool },
     TrackLed { index: u8, on: bool },
     TransportLed { which: Transport, on: bool },
+    /// Current tempo in whole BPM.
+    Tempo { bpm: u16 },
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Deserialize)]
@@ -57,6 +61,9 @@ pub struct CcMap {
     pub track_button: u8,
     pub transport: u8,
     pub footswitch: u8,
+    /// Relative tempo control; devices without one leave it out.
+    #[serde(default)]
+    pub tempo: Option<u8>,
 }
 
 #[derive(Clone, Debug, Deserialize)]
@@ -92,15 +99,12 @@ impl Profile {
         let c = &self.cc;
         let pressed = value >= 64;
         if let Some(index) = in_group(cc, c.encoder_turn, ENCODERS) {
-            let delta = match self.encoder_mode {
-                EncoderMode::RelativeTwos => match value {
-                    1..=63 => value as i8,
-                    65..=127 => -((128 - value as i16) as i8),
-                    _ => 0,
-                },
-                EncoderMode::RelativeOffset64 => (value as i16 - 64) as i8,
-            };
+            let delta = self.relative(value);
             return (delta != 0).then_some(Control::EncoderTurn { index, delta });
+        }
+        if c.tempo == Some(cc) {
+            let delta = self.relative(value);
+            return (delta != 0).then_some(Control::Tempo { delta });
         }
         if let Some(index) = in_group(cc, c.encoder_push, ENCODERS) {
             return Some(Control::EncoderPush { index, pressed });
@@ -120,8 +124,24 @@ impl Profile {
         None
     }
 
-    /// Feedback goes out on the same CC as the control it belongs to.
+    fn relative(&self, value: u8) -> i8 {
+        match self.encoder_mode {
+            EncoderMode::RelativeTwos => match value {
+                1..=63 => value as i8,
+                65..=127 => -((128 - value as i16) as i8),
+                _ => 0,
+            },
+            EncoderMode::RelativeOffset64 => (value as i16 - 64) as i8,
+        }
+    }
+
+    /// Feedback goes out on the same CC as the control it belongs to. Tempo goes out as one
+    /// pitch-bend message (14 bits) so a display never shows half of an update.
     pub fn encode(&self, f: Feedback) -> [u8; 3] {
+        if let Feedback::Tempo { bpm } = f {
+            let bpm = bpm.min(0x3FFF);
+            return [0xE0 | (self.channel.clamp(1, 16) - 1), (bpm & 0x7F) as u8, (bpm >> 7) as u8];
+        }
         let c = &self.cc;
         let lit = |on: bool| if on { 127 } else { 0 };
         let (cc, value) = match f {
@@ -133,6 +153,7 @@ impl Profile {
                 let i = TRANSPORT_ORDER.iter().position(|t| *t == which).unwrap_or(0) as u8;
                 (c.transport + i, lit(on))
             }
+            Feedback::Tempo { .. } => unreachable!("handled above"),
         };
         [self.status(), cc & 0x7F, value]
     }
@@ -142,7 +163,7 @@ impl Profile {
     /// Rejects profiles whose control groups run past CC 127 or overlap.
     pub fn validate(&self) -> Result<(), String> {
         let c = &self.cc;
-        let mut groups = [
+        let mut groups = vec![
             ("encoder_turn", c.encoder_turn, ENCODERS),
             ("encoder_push", c.encoder_push, ENCODERS),
             ("param_button", c.param_button, PARAM_BUTTONS),
@@ -150,7 +171,10 @@ impl Profile {
             ("transport", c.transport, TRANSPORT_BUTTONS),
             ("footswitch", c.footswitch, FOOTSWITCHES),
         ];
-        for (name, first, count) in groups {
+        if let Some(t) = c.tempo {
+            groups.push(("tempo", t, 1));
+        }
+        for &(name, first, count) in &groups {
             if first as usize + count > 128 {
                 return Err(format!("{name}: CCs {first}..{} run past 127", first as usize + count - 1));
             }

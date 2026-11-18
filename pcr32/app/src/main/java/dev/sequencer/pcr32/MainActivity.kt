@@ -44,7 +44,7 @@ class MainActivity : Activity() {
             onMidi = { m -> ui.post { if (state.apply(m)) view.invalidate() } },
             onState = { s -> ui.post { view.status = s } },
         )
-        view = Pcr32View(this, state, send = { m -> net.execute { session.send(m) } }, onDisplayTap = ::askHost)
+        view = Pcr32View(this, state, send = { m -> net.execute { session.send(m) } }, onDisplayLongPress = ::askHost)
         setContentView(view)
         hideSystemBars()
         connect()
@@ -63,7 +63,7 @@ class MainActivity : Activity() {
         val host = prefs.getString("host", "") ?: ""
         val port = prefs.getInt("port", 5004)
         if (host.isBlank()) {
-            view.status = "not connected — tap display"
+            view.status = "not connected — long-press display"
             return
         }
         view.status = "connecting to $host:$port …"

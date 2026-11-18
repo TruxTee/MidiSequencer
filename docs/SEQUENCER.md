@@ -1,6 +1,6 @@
 # MIDI Sequencer — Design Document
 
-**Version:** 0.23
+**Version:** 0.24
 **Stage:** Build, opened by the owner on 2026-11-18. Scope: Milestone 1.
 Any return to discussion pauses building until the owner reopens the build stage.
 
@@ -63,13 +63,17 @@ Consequence: the core must make new ideas cheap to try. Extensibility is a first
 - **Roles:** Owner directs; Claude writes the code.
 - **Engine language:** Rust (confirmed 2026-11-18).
   - Targets: `arm-unknown-linux-gnueabihf` (Zero W, ARMv6) now, `aarch64-unknown-linux-gnu` (Pi 4/5) later. Same source.
-  - Built on the laptop by cross-compiling; the Zero is too slow to compile on.
+  - Built on the workstation by cross-compiling (`cargo zigbuild`, target glibc 2.41, against the Pi's
+    libasound with `_TIME_BITS=64`); the Zero is too slow to compile on. Engine runs on the Zero W
+    since 2026-11-18; worst lateness 1.7 ms idle.
   - Threaded from day one: clock on its own thread. On the Zero all threads share one core.
     On the Pi 5 the clock thread gets pinned to a reserved core. That is configuration, not new code.
 
 - **Network MIDI:** RTP-MIDI (confirmed). Laptop: rtpMIDI driver. Pi: `rtpmidid` daemon.
   The engine only talks to local ALSA MIDI ports; USB, network and later DIN look the same to it.
-  To verify at build start: `rtpmidid` on 32-bit ARMv6.
+  `rtpmidid` v26.01 verified on the Zero W (2026-11-18): built from source on the Pi (67 min), needs
+  `pi/rtpmidid-v26.01-32bit-formatter.patch`. Config `pi/rtpmidid.ini`: listener "seqpi" for PCR32,
+  laptop connected by IP as ALSA port "Laptop".
 - **Laptop VST host:** Cantabile Lite (decided). Fallback: Carla. Free-edition limits still to check.
 
 - **PCR32 (phone controller):** Native Android app, full screen, speaks RTP-MIDI to the Pi over the LAN.
@@ -124,11 +128,15 @@ Hardware details (BCR32 included) are unknown, so the engine never sees raw devi
   parameter buttons B5–B20 CC 65–80, track buttons CC 81–84, rec/mixer/reset/start-stop CC 85–88,
   footswitches CC 89–90. Press = 127, release = 0. Feedback returns on the same CC:
   ring = absolute value, lights = 127/0.
+  App only: tempo CC 91 (relative, whole BPM); the engine reports tempo as one pitch-bend message
+  on channel 16 (14-bit whole BPM). In the app, drag on the display = tempo, long press = host.
 - **Milestone 1 surface behaviour:** track buttons select the track; PITCH (B5) is the only active
   parameter; encoder turn sets step note; encoder push toggles step on/off; start/stop and
   footswitch 1 toggle transport. Other controls are shown but inactive.
 
 ## Changelog
+- 0.24 (2026-11-18): Engine and rtpmidid running on the Zero W; cross-build recorded. PCR32 tempo
+  control (app only) added to the MIDI map.
 - 0.23 (2026-11-18): PCR32 MIDI map and Milestone 1 surface behaviour recorded.
 - 0.22 (2026-11-18): BCR32 control set researched and recorded (corrects earlier "4 buttons").
 - 0.21 (2026-11-18): Build stage opened by the owner.

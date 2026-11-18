@@ -143,3 +143,48 @@ fn out_of_range_indices_are_ignored_not_panics() {
     r.press(Control::TrackButton { index: 9, pressed: true });
     assert_eq!(r.surface.track, 0);
 }
+
+#[test]
+fn tempo_cc_decodes_as_relative_turn() {
+    let p = profile();
+    assert_eq!(p.decode(&[0xBF, 91, 3]), Some(Control::Tempo { delta: 3 }));
+    assert_eq!(p.decode(&[0xBF, 91, 126]), Some(Control::Tempo { delta: -2 }));
+    assert_eq!(p.decode(&[0xBF, 91, 0]), None);
+}
+
+#[test]
+fn tempo_feedback_is_one_14_bit_pitch_bend_on_the_profile_channel() {
+    let p = profile();
+    assert_eq!(p.encode(Feedback::Tempo { bpm: 130 }), [0xEF, 2, 1]); // 130 = 1*128 + 2
+    assert_eq!(p.encode(Feedback::Tempo { bpm: 20 }), [0xEF, 20, 0]);
+}
+
+#[test]
+fn validate_checks_the_tempo_cc_too() {
+    let mut p = profile();
+    p.cc.tempo = Some(10); // inside encoder_turn 1..32
+    assert!(p.validate().is_err());
+    p.cc.tempo = None;
+    assert!(p.validate().is_ok());
+}
+
+#[test]
+fn tempo_turn_changes_whole_bpm_clamps_and_reports() {
+    let mut r = Rig::new();
+    assert!(r.press(Control::Tempo { delta: 7 }));
+    assert_eq!(r.seq.bpm_milli(), 127_000);
+    assert_eq!(r.fb, vec![Feedback::Tempo { bpm: 127 }]);
+    r.press(Control::Tempo { delta: -127 });
+    r.press(Control::Tempo { delta: -127 });
+    assert_eq!(r.seq.bpm_milli(), 20_000); // floor
+    r.fb.clear();
+    r.surface.refresh(&r.seq, &mut |f| r.fb.push(f));
+    assert!(r.fb.contains(&Feedback::Tempo { bpm: 20 }));
+}
+
+#[test]
+fn tempo_turn_rounds_a_fractional_tempo_before_stepping() {
+    let mut r = Rig { seq: Sequencer::new(Pattern::default(), 120_600), ..Rig::new() };
+    r.press(Control::Tempo { delta: 1 });
+    assert_eq!(r.seq.bpm_milli(), 122_000); // 120.6 rounds to 121, +1
+}

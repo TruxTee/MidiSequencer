@@ -9,6 +9,7 @@
     "param_button": 65,
     "track_button": 81,
     "transport": 85,
-    "footswitch": 89
+    "footswitch": 89,
+    "tempo": 91
   }
 }

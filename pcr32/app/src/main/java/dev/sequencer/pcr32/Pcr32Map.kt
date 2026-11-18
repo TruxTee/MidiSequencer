@@ -12,6 +12,9 @@ object Pcr32Map {
     const val PARAM_BUTTON = 65  // 16 (B5..B20)
     const val TRACK_BUTTON = 81  // 4
     const val TRANSPORT = 85     // rec, mixer, reset, start/stop
+    const val TEMPO = 91         // relative BPM, like an encoder (app only)
+    /** Engine reports the tempo as one pitch-bend message: 14-bit whole BPM. */
+    const val TEMPO_FEEDBACK = 0xE0 or (CHANNEL - 1)
 
     val PARAM_LABELS = listOf(
         "PITCH", "VELOCITY", "MUTE", "DELAY", "LENGTH", "CTRL α", "CTRL β", "WAVE GEN",
@@ -22,9 +25,13 @@ object Pcr32Map {
     fun cc(cc: Int, value: Int) = byteArrayOf(STATUS.toByte(), cc.toByte(), value.coerceIn(0, 127).toByte())
 
     /** Relative two's complement: +n -> n, -n -> 128 - n. Steps are limited to ±63. */
-    fun turn(encoder: Int, steps: Int): ByteArray {
+    fun turn(encoder: Int, steps: Int): ByteArray = relative(ENCODER_TURN + encoder, steps)
+
+    fun tempo(steps: Int): ByteArray = relative(TEMPO, steps)
+
+    private fun relative(cc: Int, steps: Int): ByteArray {
         val s = steps.coerceIn(-63, 63)
-        return cc(ENCODER_TURN + encoder, if (s >= 0) s else 128 + s)
+        return cc(cc, if (s >= 0) s else 128 + s)
     }
 }
 
@@ -35,10 +42,17 @@ class SurfaceState {
     val paramLed = BooleanArray(16)
     val trackLed = BooleanArray(4)
     val transportLed = BooleanArray(4)
+    /** Whole BPM from the engine; 0 until it has reported. */
+    var bpm = 0
 
     /** Applies one received MIDI message. Returns false if it is not PCR32 feedback. */
     fun apply(m: ByteArray): Boolean {
-        if (m.size != 3 || (m[0].toInt() and 0xFF) != Pcr32Map.STATUS) return false
+        if (m.size != 3) return false
+        if ((m[0].toInt() and 0xFF) == Pcr32Map.TEMPO_FEEDBACK) {
+            bpm = (m[1].toInt() and 0x7F) or ((m[2].toInt() and 0x7F) shl 7)
+            return true
+        }
+        if ((m[0].toInt() and 0xFF) != Pcr32Map.STATUS) return false
         val cc = m[1].toInt() and 0x7F
         val v = m[2].toInt() and 0x7F
         val on = v >= 64

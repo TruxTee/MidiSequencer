@@ -59,6 +59,12 @@ impl Surface {
             Control::EncoderTurn { index, .. } if (index as usize) < ENCODERS => {
                 fb(Feedback::Ring { index, value: self.ring_value(seq, index as usize) });
             }
+            Control::Tempo { delta } => {
+                let bpm = (seq.bpm_milli() as i32 + 500) / 1000 + delta as i32;
+                seq.set_tempo(bpm.max(0) as u32 * 1000);
+                fb(Feedback::Tempo { bpm: bpm_of(seq) });
+                return Changed(true);
+            }
             Control::Transport { which: Transport::StartStop, pressed: true }
             | Control::Footswitch { index: 0, pressed: true } => {
                 if seq.is_running() {
@@ -91,5 +97,10 @@ impl Surface {
             fb(Feedback::TrackLed { index: i, on: i == self.track });
         }
         fb(Feedback::TransportLed { which: Transport::StartStop, on: seq.is_running() });
+        fb(Feedback::Tempo { bpm: bpm_of(seq) });
     }
+}
+
+fn bpm_of(seq: &Sequencer) -> u16 {
+    ((seq.bpm_milli() + 500) / 1000) as u16
 }

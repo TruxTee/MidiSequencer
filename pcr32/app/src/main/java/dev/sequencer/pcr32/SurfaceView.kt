@@ -16,7 +16,7 @@ class Pcr32View(
     context: Context,
     private val state: SurfaceState,
     private val send: (ByteArray) -> Unit,
-    private val onDisplayTap: () -> Unit,
+    private val onDisplayLongPress: () -> Unit,
 ) : View(context) {
 
     private enum class Kind { ENCODER, PARAM, TRACK, TRANSPORT, DISPLAY }
@@ -25,7 +25,7 @@ class Pcr32View(
     private val controls = ArrayList<Ctl>()
     private val dp = resources.displayMetrics.density
 
-    var status = "not connected — tap display"
+    var status = "not connected — long-press display"
         set(v) { field = v; invalidate() }
     private var lastEncoder = -1
 
@@ -118,13 +118,15 @@ class Pcr32View(
         fill.color = Color.BLACK
         c.drawRect(r, fill)
         text.color = Color.rgb(120, 200, 255)
-        text.textSize = r.height() * 0.22f
+        text.textSize = r.height() * 0.3f
+        c.drawText(if (state.bpm > 0) "${state.bpm} BPM" else "--- BPM", r.centerX(), r.top + r.height() * 0.36f, text)
+        text.textSize = r.height() * 0.15f
         val track = state.trackLed.indexOfFirst { it } + 1
-        val line1 = if (lastEncoder >= 0) "T$track  S${lastEncoder + 1}  ${noteName(state.ring[lastEncoder])}" else "PCR32"
-        c.drawText(line1, r.centerX(), r.top + r.height() * 0.42f, text)
-        text.textSize = r.height() * 0.13f
+        val line2 = if (lastEncoder >= 0) "T$track  S${lastEncoder + 1}  ${noteName(state.ring[lastEncoder])}" else "PCR32"
+        c.drawText(line2, r.centerX(), r.top + r.height() * 0.62f, text)
+        text.textSize = r.height() * 0.12f
         text.color = Color.GRAY
-        c.drawText(status, r.centerX(), r.top + r.height() * 0.8f, text)
+        c.drawText(status, r.centerX(), r.top + r.height() * 0.86f, text)
     }
 
     private fun hit(x: Float, y: Float) = controls.firstOrNull { it.rect.contains(x, y) }
@@ -144,19 +146,32 @@ class Pcr32View(
             MotionEvent.ACTION_DOWN, MotionEvent.ACTION_POINTER_DOWN -> {
                 val i = e.actionIndex
                 val ctl = hit(e.getX(i), e.getY(i)) ?: return true
-                if (ctl.kind == Kind.DISPLAY) { onDisplayTap(); return true }
                 touches[e.getPointerId(i)] = Touch(ctl, e.getY(i), e.eventTime)
-                if (ctl.kind == Kind.ENCODER) lastEncoder = ctl.index else press(ctl, true)
+                when (ctl.kind) {
+                    Kind.ENCODER -> lastEncoder = ctl.index
+                    Kind.DISPLAY -> {}
+                    else -> press(ctl, true)
+                }
                 invalidate()
             }
             MotionEvent.ACTION_MOVE -> for (i in 0 until e.pointerCount) {
                 val t = touches[e.getPointerId(i)] ?: continue
-                if (t.ctl.kind != Kind.ENCODER) continue
+                if (t.ctl.kind != Kind.ENCODER && t.ctl.kind != Kind.DISPLAY) continue
                 val y = e.getY(i)
                 var steps = t.drag.move((t.lastY - y) / dp, e.eventTime - t.lastAt)
                 t.lastY = y
                 t.lastAt = e.eventTime
-                if (steps != 0) {
+                if (steps != 0 && t.ctl.kind == Kind.DISPLAY) {
+                    // Drag on the display = tempo. Shown at once; the engine's report corrects it.
+                    t.moved = true
+                    if (state.bpm > 0) state.bpm = (state.bpm + steps).coerceIn(20, 300)
+                    while (steps != 0) {
+                        val chunk = steps.coerceIn(-63, 63)
+                        send(Pcr32Map.tempo(chunk))
+                        steps -= chunk
+                    }
+                    invalidate()
+                } else if (steps != 0) {
                     t.moved = true
                     // Show the turn at once; the engine's feedback then sets the real value.
                     state.ring[t.ctl.index] = (state.ring[t.ctl.index] + steps).coerceIn(0, 127)
@@ -171,7 +186,12 @@ class Pcr32View(
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
                 val id = e.getPointerId(e.actionIndex)
                 val t = touches.remove(id) ?: return true
-                if (t.ctl.kind == Kind.ENCODER) {
+                if (t.ctl.kind == Kind.DISPLAY) {
+                    // Host settings only on a deliberate long press, never by a slip mid-set.
+                    if (!t.moved && e.actionMasked != MotionEvent.ACTION_CANCEL && e.eventTime - t.downAt >= 600) {
+                        onDisplayLongPress()
+                    }
+                } else if (t.ctl.kind == Kind.ENCODER) {
                     // A short touch without turning is a push.
                     if (!t.moved && e.actionMasked != MotionEvent.ACTION_CANCEL && e.eventTime - t.downAt < 400) {
                         send(Pcr32Map.cc(Pcr32Map.ENCODER_PUSH + t.ctl.index, 127))
