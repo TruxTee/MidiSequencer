@@ -25,6 +25,11 @@ fn main() {
     let count = |s: u8| log.iter().filter(|(_, m)| m[0] & 0xF0 == s || m[0] == s).count();
     println!("start {} stop {} clock {} note-on {} note-off {}",
         count(0xFA), count(0xFC), count(0xF8), count(0x90), count(0x80));
+    let mut seq: Vec<(u8, usize)> = Vec::new();
+    for (_, m) in log.iter().filter(|(_, m)| m[0] & 0xF0 == 0x90) {
+        match seq.last_mut() { Some((n, c)) if *n == m[1] => *c += 1, _ => seq.push((m[1], 1)) }
+    }
+    println!("note-on sequence (note x count): {:?}", seq);
     let ons: Vec<f64> = log.iter().filter(|(_, m)| m[0] & 0xF0 == 0x90).map(|(t, _)| *t).collect();
     let gaps: Vec<f64> = ons.windows(2).map(|w| w[1] - w[0]).collect();
     if !gaps.is_empty() {
