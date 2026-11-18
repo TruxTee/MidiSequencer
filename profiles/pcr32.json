@@ -1,0 +1,14 @@
+{
+  "name": "PCR32",
+  "port": "PCR32",
+  "channel": 16,
+  "encoder_mode": "relative_twos",
+  "cc": {
+    "encoder_turn": 1,
+    "encoder_push": 33,
+    "param_button": 65,
+    "track_button": 81,
+    "transport": 85,
+    "footswitch": 89
+  }
+}

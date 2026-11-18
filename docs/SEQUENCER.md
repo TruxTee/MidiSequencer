@@ -1,6 +1,6 @@
 # MIDI Sequencer — Design Document
 
-**Version:** 0.21
+**Version:** 0.22
 **Stage:** Build, opened by the owner on 2026-11-18. Scope: Milestone 1.
 Any return to discussion pauses building until the owner reopens the build stage.
 
@@ -20,7 +20,20 @@ A home-built MIDI step sequencer running on a Raspberry Pi.
   - USB-C (data + power), separate USB-C power, MIDI In, MIDI Out A, MIDI Out B/Thru (DIN).
   - Analogue sync in/out, 4x CV out (1 V/oct, 0 to +10 V), 4x gate out (5 V or 10 V), 2 footswitch inputs.
   - Controller mode sends CC/NRPN; Learn mode available. Built-in 4-track step sequencer in the other mode.
-  - Not on the product page: LED rings, MIDI channels, clock resolution, full message list. Needs the manual.
+  - Controls (Behringer open-source repo + community docs, manual V2.0 2026-04-06, firmware 1.0.3):
+    - 32 push encoders E25–E56, 4 rows x 8, each with a 15-LED ring (12 ring styles). Plus a SEL encoder for menus.
+    - B1 mode; B5–B20: 16 parameter buttons in 2 rows of 8 (ZAQ labels: PITCH, VELOCITY, MUTE, DELAY, LENGTH,
+      CTRL α, CTRL β, WAVE GEN, CHORD, STEP SKIP, SEQ START, SEQ LENGTH, SEQ OFFSET, CLK DIV, SHUFFLE, DIRECTION).
+    - B21–B24: track select T1–T4. B59–B68: global, exit, store, load, page -/+, rec, mixer, reset, start/stop.
+    - Keys are partly RGB, partly single colour. OLED 128 x 32 mono.
+  - Controller (CTRL) mode: assignable are B5–B24, all 32 encoders (turn and push), B65–B68, both footswitches.
+    Encoder modes: absolute, 14-bit, relative (3 variants), inc/dec. Button modes: toggle on/off, increment.
+    Messages: CC, NRPN, PC, note (buttons), pitch bend (encoders), aftertouch, MMC. 64 presets.
+  - USB-MIDI ports: "BCR-32 CTRL" and "BCR-32 ZAQ". Class compliant.
+  - Unknown: whether LED rings and button LEDs follow incoming MIDI (feedback from the Pi).
+  - Firmware: Behringer published schematic, MCU docs and demo firmware (AGPL-3.0, GD32F405, flashable over USB).
+    Custom firmware is a later fallback if CTRL mode falls short.
+  - Sources: github.com/MusicTribeOpenSource/0715-AAW, github.com/UniversalSyntropy/bcr32.
 - Stand-in: **PCR32**, a native Android app that roughly emulates the BCR32 (see Decisions).
 
 ## 2. Open questions
@@ -108,6 +121,7 @@ Hardware details (BCR32 included) are unknown, so the engine never sees raw devi
 - Profiles are data files, not code. PCR32's profile is written now; the BCR32's when it arrives.
 
 ## Changelog
+- 0.22 (2026-11-18): BCR32 control set researched and recorded (corrects earlier "4 buttons").
 - 0.21 (2026-11-18): Build stage opened by the owner.
 - 0.20 (2026-11-18): Version control: single local repo, GitHub remote later.
 - 0.19 (2026-11-18): Milestone 1 defined.

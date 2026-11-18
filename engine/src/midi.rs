@@ -73,6 +73,13 @@ impl Outputs {
         (Outputs { conns, tracks }, warnings)
     }
 
+    /// All Notes Off (CC 123) on every routed channel, so notes left hanging by a crash stop.
+    pub fn all_notes_off(&mut self) {
+        for (i, ch) in self.tracks.iter().flatten() {
+            let _ = self.conns[*i].send(&[0xB0 | (ch - 1), 123, 0]);
+        }
+    }
+
     pub fn send(&mut self, e: Event) {
         match e {
             Event::NoteOn { track, .. } | Event::NoteOff { track, .. } => {
