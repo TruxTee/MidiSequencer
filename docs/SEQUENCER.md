@@ -74,7 +74,9 @@ Consequence: the core must make new ideas cheap to try. Extensibility is a first
   `rtpmidid` v26.01 verified on the Zero W (2026-11-18): built from source on the Pi (67 min), needs
   `pi/rtpmidid-v26.01-32bit-formatter.patch` and `pi/rtpmidid-v26.01-ck-timeout.patch` (accepted
   sessions without clock sync are dropped after 30 s; upstream's 60 s timer was lost whenever a
-  session moved inside the server's vector, so vanished clients stayed forever). Config `pi/rtpmidid.ini`: listener "seqpi" for PCR32,
+  session moved inside the server's vector, so vanished clients stayed forever).
+  Built binary kept in `pi/bin/rtpmidid-v26.01-armv6` (both patches; needs `libavahi-client3`), so a
+  fresh card does not need the 67-minute build. Config `pi/rtpmidid.ini`: listener "seqpi" for PCR32,
   laptop connected by IP as ALSA port "Laptop".
 - **Laptop VST host:** Cantabile Lite (decided). Fallback: Carla. Free-edition limits still to check.
 
