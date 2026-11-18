@@ -26,6 +26,37 @@ class MainActivity : Activity() {
             .createWifiLock(WifiManager.WIFI_MODE_FULL_LOW_LATENCY, "pcr32").apply { setReferenceCounted(false) }
     }
 
+    private var foreground = false
+    private var connecting = false // UI thread only
+
+    // While in front: reconnect whenever the session is gone (host restarted, Wi-Fi blip, BY).
+    private val keeper = object : Runnable {
+        override fun run() {
+            if (!foreground) return
+            if (!connecting && !session.isAlive() && hasHost()) {
+                view.status = "connection lost — reconnecting …"
+                connect()
+            }
+            ui.postDelayed(this, 2000)
+        }
+    }
+
+    override fun onStart() {
+        super.onStart()
+        foreground = true
+        connect()
+        ui.postDelayed(keeper, 2000)
+    }
+
+    // Leaving the foreground says goodbye (BY), so the Pi drops the port instead of keeping a
+    // dead one; onStart connects again.
+    override fun onStop() {
+        foreground = false
+        ui.removeCallbacks(keeper)
+        net.execute { session.close() }
+        super.onStop()
+    }
+
     override fun onResume() {
         super.onResume()
         wifiLock.acquire()
@@ -47,7 +78,6 @@ class MainActivity : Activity() {
         view = Pcr32View(this, state, send = { m -> net.execute { session.send(m) } }, onDisplayLongPress = ::askHost)
         setContentView(view)
         hideSystemBars()
-        connect()
     }
 
     private fun hideSystemBars() {
@@ -59,6 +89,8 @@ class MainActivity : Activity() {
 
     private val prefs get() = getSharedPreferences("pcr32", MODE_PRIVATE)
 
+    private fun hasHost() = !prefs.getString("host", "").isNullOrBlank()
+
     private fun connect() {
         val host = prefs.getString("host", "") ?: ""
         val port = prefs.getInt("port", 5004)
@@ -66,12 +98,16 @@ class MainActivity : Activity() {
             view.status = "not connected — long-press display"
             return
         }
-        view.status = "connecting to $host:$port …"
+        if (connecting) return
+        connecting = true
+        if (!session.isAlive()) view.status = "connecting to $host:$port …"
         net.execute {
             try {
                 session.connect(host, port)
             } catch (e: Exception) {
                 ui.post { view.status = "error: ${e.message}" }
+            } finally {
+                ui.post { connecting = false }
             }
         }
     }
@@ -104,7 +140,6 @@ class MainActivity : Activity() {
     }
 
     override fun onDestroy() {
-        net.execute { session.close() }
         net.shutdown()
         super.onDestroy()
     }

@@ -98,6 +98,18 @@ class CodecTest {
         assertArrayEquals(bytes(0xEF, 20, 0), RtpCodec.parseMidi(p, p.size).single())
     }
 
+    @Test fun livenessExpiresAfterSilenceAndResets() {
+        val l = Liveness(5_000)
+        assertFalse(l.alive(0)) // never heard
+        l.heard(1_000)
+        assertTrue(l.alive(5_999))
+        assertFalse(l.alive(6_000))
+        l.heard(6_000)
+        assertTrue(l.alive(6_001))
+        l.reset()
+        assertFalse(l.alive(6_001))
+    }
+
     @Test fun noteNames() {
         assertEquals("C4", noteName(60))
         assertEquals("C#-1", noteName(1))

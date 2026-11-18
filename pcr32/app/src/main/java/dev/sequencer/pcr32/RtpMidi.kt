@@ -100,6 +100,14 @@ object RtpCodec {
     }
 }
 
+/** A session is alive while the host has been heard from within [timeoutNs]. */
+class Liveness(private val timeoutNs: Long) {
+    @Volatile private var lastNs: Long? = null
+    fun heard(nowNs: Long) { lastNs = nowNs }
+    fun reset() { lastNs = null }
+    fun alive(nowNs: Long): Boolean = lastNs?.let { nowNs - it < timeoutNs } ?: false
+}
+
 /**
  * AppleMIDI session as initiator: invites a host (rtpMIDI on Windows, rtpmidid on the Pi),
  * keeps clock sync running, sends MIDI and delivers received MIDI to [onMidi].
@@ -115,6 +123,9 @@ class RtpMidiSession(
     private var data: DatagramSocket? = null
     private var host: InetSocketAddress? = null
     @Volatile private var running = false
+    // Each connect starts a new generation; loops of an older one see the change and end.
+    @Volatile private var gen = 0
+    private val liveness = Liveness(5_000_000_000L)
     private var seq = Random.nextInt(0, 0xFFFF)
 
     private fun now100us(): Long = (System.nanoTime() - t0) / 100_000
@@ -134,9 +145,11 @@ class RtpMidiSession(
         }
         host = InetSocketAddress(addr, port)
         running = true
-        Thread({ receiveLoop(d) }, "rtp-data").apply { isDaemon = true }.start()
-        Thread({ receiveLoop(c) }, "rtp-control").apply { isDaemon = true }.start()
-        Thread({ syncLoop() }, "rtp-sync").apply { isDaemon = true }.start()
+        liveness.heard(System.nanoTime())
+        val g = ++gen
+        Thread({ receiveLoop(d, g) }, "rtp-data").apply { isDaemon = true }.start()
+        Thread({ receiveLoop(c, g) }, "rtp-control").apply { isDaemon = true }.start()
+        Thread({ syncLoop(g) }, "rtp-sync").apply { isDaemon = true }.start()
         onState("connected to $hostName")
         return true
     }
@@ -167,12 +180,16 @@ class RtpMidiSession(
         return false
     }
 
-    private fun receiveLoop(s: DatagramSocket) {
+    /** True while the host keeps answering; false after 5 s of silence, a BY or close(). */
+    fun isAlive(): Boolean = running && liveness.alive(System.nanoTime())
+
+    private fun receiveLoop(s: DatagramSocket, g: Int) {
         val buf = ByteArray(2048)
         s.soTimeout = 0
-        while (running) {
+        while (running && gen == g) {
             val r = DatagramPacket(buf, buf.size)
             try { s.receive(r) } catch (_: Exception) { break }
+            liveness.heard(System.nanoTime())
             when (RtpCodec.sessionCommand(buf, r.length)) {
                 RtpCodec.CK -> answerClock(s, buf, r)
                 RtpCodec.BY -> { onState("host ended session"); running = false }
@@ -194,15 +211,16 @@ class RtpMidiSession(
         s.send(DatagramPacket(reply, reply.size, r.socketAddress))
     }
 
-    // Initial burst, then every 10 s, as rtpMIDI hosts drop sessions without clock sync.
-    private fun syncLoop() {
+    // Initial burst, then every 2 s: hosts drop sessions without clock sync, and each answer
+    // tells [isAlive] the host is still there.
+    private fun syncLoop(g: Int) {
         var n = 0
-        while (running) {
+        while (running && gen == g) {
             val d = data ?: break
             val h = host ?: break
             val pkt = RtpCodec.clock(ssrc, 0, now100us(), 0, 0)
             try { d.send(DatagramPacket(pkt, pkt.size, InetSocketAddress(h.address, h.port + 1))) } catch (_: Exception) {}
-            Thread.sleep(if (n++ < 6) 1500 else 10_000)
+            Thread.sleep(if (n++ < 6) 1500 else 2000)
         }
     }
 
@@ -224,6 +242,7 @@ class RtpMidiSession(
             try { c.send(DatagramPacket(by, by.size, h)) } catch (_: Exception) {}
         }
         running = false
+        liveness.reset()
         control?.close(); data?.close()
         control = null; data = null; host = null
     }
