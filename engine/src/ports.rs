@@ -6,13 +6,15 @@ use crate::control::Profile;
 use crate::midi::Routing;
 use crate::pattern::TRACKS;
 
-/// Exact name first (case-insensitive), then the first name containing `want`.
+/// Exact name first (case-insensitive), then names containing `want`. Among several matches
+/// the last one wins: ALSA lists ports in creation order, and rtpmidid keeps the dead port of
+/// a client that vanished without saying goodbye, so the newest port is the live one.
 pub fn resolve<'a>(names: &'a [String], want: &str) -> Option<&'a String> {
     let want = want.to_lowercase();
     names
         .iter()
-        .find(|n| n.to_lowercase() == want)
-        .or_else(|| names.iter().find(|n| n.to_lowercase().contains(&want)))
+        .rfind(|n| n.to_lowercase() == want)
+        .or_else(|| names.iter().rfind(|n| n.to_lowercase().contains(&want)))
 }
 
 /// The ports the engine wants right now; None where nothing matches.

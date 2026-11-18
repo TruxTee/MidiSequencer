@@ -24,6 +24,13 @@ fn resolve_prefers_exact_name_over_substring() {
 }
 
 #[test]
+fn resolve_takes_the_newest_of_several_matches() {
+    // rtpmidid keeps dead sessions: the phone reconnected twice after being killed.
+    let n = names(&["rtpmidid:Laptop 128:0", "rtpmidid:PCR32 128:2", "rtpmidid:PCR32 128:3", "rtpmidid:PCR32 128:5"]);
+    assert_eq!(resolve(&n, "PCR32").map(String::as_str), Some("rtpmidid:PCR32 128:5"));
+}
+
+#[test]
 fn wiring_follows_ports_going_and_coming_back() {
     let (p, r) = (profile(), routing());
     let ins = names(&["rtpmidid:PCR32 128:2"]);
