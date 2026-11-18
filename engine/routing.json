@@ -1,8 +1,8 @@
 {
   "instruments": [
-    { "name": "track1", "port": "loopMIDI", "channel": 1 },
-    { "name": "track2", "port": "loopMIDI", "channel": 2 },
-    { "name": "track3", "port": "loopMIDI", "channel": 3 },
-    { "name": "track4", "port": "loopMIDI", "channel": 4 }
+    { "name": "track1", "port": "Laptop", "channel": 1 },
+    { "name": "track2", "port": "Laptop", "channel": 2 },
+    { "name": "track3", "port": "Laptop", "channel": 3 },
+    { "name": "track4", "port": "Laptop", "channel": 4 }
   ]
 }
