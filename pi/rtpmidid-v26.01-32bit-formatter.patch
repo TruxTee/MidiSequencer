@@ -1,0 +1,12 @@
+diff --git a/include/rtpmidid/formatterhelper.hpp b/include/rtpmidid/formatterhelper.hpp
+index b1d99af..1f7ac0e 100644
+--- a/include/rtpmidid/formatterhelper.hpp
++++ b/include/rtpmidid/formatterhelper.hpp
+@@ -80,5 +80,7 @@
+     }                                                                          \
+   }
+ 
++#if __SIZEOF_SIZE_T__ == 8  // on 32-bit, size_t/ssize_t are unsigned int/int: would hijack their formatters
+ BASIC_FORMATTER(size_t, "{}", (uint32_t)v);
+ BASIC_FORMATTER(ssize_t, "{}", (int32_t)v);
++#endif
