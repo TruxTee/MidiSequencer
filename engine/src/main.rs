@@ -21,9 +21,14 @@ fn read_json<T: serde::de::DeserializeOwned>(path: &PathBuf) -> T {
     serde_json::from_slice(&data).unwrap_or_else(|e| panic!("bad file {}: {e}", path.display()))
 }
 
+/// Exact name first (case-insensitive), then the first port containing `want`.
 fn find_port<T: midir::MidiIO>(io: &T, want: &str) -> Option<T::Port> {
     let want = want.to_lowercase();
-    io.ports().into_iter().find(|p| io.port_name(p).map(|n| n.to_lowercase().contains(&want)).unwrap_or(false))
+    let named: Vec<(T::Port, String)> =
+        io.ports().into_iter().map(|p| { let n = io.port_name(&p).unwrap_or_default().to_lowercase(); (p, n) }).collect();
+    let exact = named.iter().position(|(_, n)| *n == want);
+    let i = exact.or_else(|| named.iter().position(|(_, n)| n.contains(&want)))?;
+    named.into_iter().nth(i).map(|(p, _)| p)
 }
 
 fn main() {
