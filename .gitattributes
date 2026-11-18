@@ -1,0 +1,5 @@
+# Files that run or are read on the Pi (Linux) keep LF line endings.
+*.sh eol=lf
+*.service eol=lf
+*.ini eol=lf
+*.patch eol=lf
