@@ -1,6 +1,6 @@
 # MIDI Sequencer — Design Document
 
-**Version:** 0.24
+**Version:** 0.25
 **Stage:** Build, opened by the owner on 2026-11-18. Scope: Milestone 1.
 Any return to discussion pauses building until the owner reopens the build stage.
 
@@ -134,7 +134,15 @@ Hardware details (BCR32 included) are unknown, so the engine never sees raw devi
   parameter; encoder turn sets step note; encoder push toggles step on/off; start/stop and
   footswitch 1 toggle transport. Other controls are shown but inactive.
 
+## 7. Notes: small jobs for the next build
+Small fixes the owner has approved. They are collected here and done together in the next build,
+then removed from this list.
+- rtpmidid: drop an accepted session that has been silent for 30 s (PCR32 pings every 10 s).
+  A killed app never sends BY, so dead "PCR32" ports pile up. Second patch beside
+  `pi/rtpmidid-v26.01-32bit-formatter.patch`.
+
 ## Changelog
+- 0.25 (2026-11-18): Notes list for small approved jobs; first entry: rtpmidid silent-session timeout.
 - 0.24 (2026-11-18): Engine and rtpmidid running on the Zero W; cross-build recorded. PCR32 tempo
   control (app only) added to the MIDI map.
 - 0.23 (2026-11-18): PCR32 MIDI map and Milestone 1 surface behaviour recorded.
