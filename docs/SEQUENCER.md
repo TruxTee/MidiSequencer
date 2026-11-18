@@ -1,8 +1,7 @@
 # MIDI Sequencer — Design Document
 
-**Version:** 0.30
-**Stage:** Build, opened by the owner on 2026-11-18. Scope: Milestone 1.
-Any return to discussion pauses building until the owner reopens the build stage.
+**Version:** 0.31
+**Stage:** Discussion, owner returned to it on 2026-11-18 after Milestone 1 was verified. Nothing is built until the owner reopens the build stage.
 
 ## 1. Big picture
 
@@ -192,6 +191,7 @@ then removed from this list.
   Log timestamps from the first seconds after boot are wrong. Harmless for the music.
 
 ## Changelog
+- 0.31 (2026-11-18): Back to discussion stage (owner); build paused after Milestone 1.
 - 0.30 (2026-11-18): Milestone 1 verified end to end (power-cut test passed); notes item: Pi clock after boot.
 - 0.29 (2026-11-18): Harmony direction recorded: degree entry, accidental lane, density control, keyboard transpose.
 - 0.28 (2026-11-18): Direction recorded: step data as lanes with parameter locks and automation.
