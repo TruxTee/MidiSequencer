@@ -94,8 +94,10 @@ fn pitch_clamps_at_midi_limits() {
 fn encoders_do_nothing_when_another_parameter_is_selected() {
     let mut r = Rig::new();
     r.press(Control::ParamButton { index: 1, pressed: true }); // VELOCITY: not in milestone 1
+    r.fb.clear();
     assert!(!r.press(Control::EncoderTurn { index: 0, delta: 5 }));
     assert_eq!(r.seq.pattern.tracks[0].steps[0].note, 60);
+    assert_eq!(r.fb, vec![Feedback::Ring { index: 0, value: 0 }]); // true value echoed back
 }
 
 #[test]

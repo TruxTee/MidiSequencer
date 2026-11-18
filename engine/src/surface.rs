@@ -54,6 +54,11 @@ impl Surface {
                 fb(Feedback::EncoderLed { index, on: step.on });
                 return Changed(true);
             }
+            // Turns that change nothing still get the true value back, so a controller that
+            // moved its ring ahead of the engine is corrected.
+            Control::EncoderTurn { index, .. } if (index as usize) < ENCODERS => {
+                fb(Feedback::Ring { index, value: self.ring_value(seq, index as usize) });
+            }
             Control::Transport { which: Transport::StartStop, pressed: true }
             | Control::Footswitch { index: 0, pressed: true } => {
                 if seq.is_running() {
@@ -68,12 +73,15 @@ impl Surface {
         Changed(false)
     }
 
+    fn ring_value(&self, seq: &Sequencer, step: usize) -> u8 {
+        if self.param == PARAM_PITCH { seq.pattern.tracks[self.track as usize].steps[step].note } else { 0 }
+    }
+
     /// Sends the full picture: rings and step lights of the selected track, selected buttons.
     pub fn refresh(&self, seq: &Sequencer, fb: &mut impl FnMut(Feedback)) {
         let steps = &seq.pattern.tracks[self.track as usize].steps;
         for i in 0..ENCODERS {
-            let value = if self.param == PARAM_PITCH { steps[i].note } else { 0 };
-            fb(Feedback::Ring { index: i as u8, value });
+            fb(Feedback::Ring { index: i as u8, value: self.ring_value(seq, i) });
             fb(Feedback::EncoderLed { index: i as u8, on: steps[i].on });
         }
         for i in 0..PARAM_BUTTONS as u8 {

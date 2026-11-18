@@ -2,6 +2,7 @@ package dev.sequencer.pcr32
 
 import android.app.Activity
 import android.app.AlertDialog
+import android.net.wifi.WifiManager
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -19,6 +20,21 @@ class MainActivity : Activity() {
     private val state = SurfaceState()
     private lateinit var view: Pcr32View
     private lateinit var session: RtpMidiSession
+    // Without this Android's Wi-Fi power saving delays sporadic packets by up to ~200 ms.
+    private val wifiLock by lazy {
+        (applicationContext.getSystemService(WIFI_SERVICE) as WifiManager)
+            .createWifiLock(WifiManager.WIFI_MODE_FULL_LOW_LATENCY, "pcr32").apply { setReferenceCounted(false) }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        wifiLock.acquire()
+    }
+
+    override fun onPause() {
+        wifiLock.release()
+        super.onPause()
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

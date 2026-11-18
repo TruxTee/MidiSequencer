@@ -24,7 +24,6 @@ class Pcr32View(
 
     private val controls = ArrayList<Ctl>()
     private val dp = resources.displayMetrics.density
-    private val detentPx = 9f * dp
 
     var status = "not connected — tap display"
         set(v) { field = v; invalidate() }
@@ -33,8 +32,9 @@ class Pcr32View(
     private val fill = Paint(Paint.ANTI_ALIAS_FLAG)
     private val text = Paint(Paint.ANTI_ALIAS_FLAG).apply { color = Color.WHITE; textAlign = Paint.Align.CENTER }
 
-    private class Touch(val ctl: Ctl, val startY: Float, val downAt: Long) {
-        var sentSteps = 0
+    private class Touch(val ctl: Ctl, var lastY: Float, var lastAt: Long) {
+        val downAt = lastAt
+        val drag = EncoderDrag()
         var moved = false
     }
     private val touches = HashMap<Int, Touch>()
@@ -152,12 +152,20 @@ class Pcr32View(
             MotionEvent.ACTION_MOVE -> for (i in 0 until e.pointerCount) {
                 val t = touches[e.getPointerId(i)] ?: continue
                 if (t.ctl.kind != Kind.ENCODER) continue
-                val steps = ((t.startY - e.getY(i)) / detentPx).toInt()
-                val delta = steps - t.sentSteps
-                if (delta != 0) {
-                    send(Pcr32Map.turn(t.ctl.index, delta))
-                    t.sentSteps = steps
+                val y = e.getY(i)
+                var steps = t.drag.move((t.lastY - y) / dp, e.eventTime - t.lastAt)
+                t.lastY = y
+                t.lastAt = e.eventTime
+                if (steps != 0) {
                     t.moved = true
+                    // Show the turn at once; the engine's feedback then sets the real value.
+                    state.ring[t.ctl.index] = (state.ring[t.ctl.index] + steps).coerceIn(0, 127)
+                    while (steps != 0) { // one message carries at most ±63
+                        val chunk = steps.coerceIn(-63, 63)
+                        send(Pcr32Map.turn(t.ctl.index, chunk))
+                        steps -= chunk
+                    }
+                    invalidate()
                 }
             }
             MotionEvent.ACTION_UP, MotionEvent.ACTION_POINTER_UP, MotionEvent.ACTION_CANCEL -> {
