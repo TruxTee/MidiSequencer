@@ -1,6 +1,6 @@
 # MIDI Sequencer — Design Document
 
-**Version:** 0.29
+**Version:** 0.30
 **Stage:** Build, opened by the owner on 2026-11-18. Scope: Milestone 1.
 Any return to discussion pauses building until the owner reopens the build stage.
 
@@ -161,6 +161,10 @@ Consequence: the core must make new ideas cheap to try. Extensibility is a first
 - Notes reach Cantabile on the laptop via RTP-MIDI and sound from a VST.
 - Pull the Pi's plug, power up: the pattern is back.
 - Out of scope: scales, rhythm additions, generative features, workflow.
+- **Status 2026-11-18: all four items verified.** Power-cut test on the read-only card: tempo
+  changed to 143 BPM plus one step, saved, plug pulled while playing. After 1 min 53 s the engine
+  had the identical state file (checksum compared), the root marker was gone, the `/data` marker
+  survived, `/data` mounted without recovery, and the owner confirmed PCR32 and playback.
 
 ## 6. Device mapping layer (agreed 2026-11-18)
 Hardware details (BCR32 included) are unknown, so the engine never sees raw device MIDI.
@@ -183,9 +187,12 @@ Hardware details (BCR32 included) are unknown, so the engine never sees raw devi
 ## 7. Notes: small jobs for the next build
 Small fixes the owner has approved. They are collected here and done together in the next build,
 then removed from this list.
-(empty)
+- Pi clock after boot: the Zero has no battery clock and the read-only root keeps the saved time
+  from advancing, so the clock starts at the last writable boot until network time corrects it.
+  Log timestamps from the first seconds after boot are wrong. Harmless for the music.
 
 ## Changelog
+- 0.30 (2026-11-18): Milestone 1 verified end to end (power-cut test passed); notes item: Pi clock after boot.
 - 0.29 (2026-11-18): Harmony direction recorded: degree entry, accidental lane, density control, keyboard transpose.
 - 0.28 (2026-11-18): Direction recorded: step data as lanes with parameter locks and automation.
 - 0.27 (2026-11-18): Card reflashed as seqpi with read-only root and `/data`; engine and configs
