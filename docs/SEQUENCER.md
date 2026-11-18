@@ -1,6 +1,6 @@
 # MIDI Sequencer — Design Document
 
-**Version:** 0.27
+**Version:** 0.28
 **Stage:** Build, opened by the owner on 2026-11-18. Scope: Milestone 1.
 Any return to discussion pauses building until the owner reopens the build stage.
 
@@ -45,6 +45,20 @@ Known directions:
 - Organizing pre-sequenced material.
 - Live manipulation during playback.
 - Refining sequences: scales and modes, rhythmic additions, generative manipulation.
+- Step data as lanes with parameter locks (direction agreed 2026-11-18, not scheduled):
+  - A track is a grid: steps x lanes. Pitch, velocity, gate and probability are lanes, and so are
+    sound parameters (CC, NRPN, pitch bend). One rule for all.
+  - Each cell (one step in one lane) is either locked with its own value or empty and uses the
+    lane's default. Changing the default moves every empty cell; locked cells keep their value.
+    Clearing a cell means "follow the default again". Stored sparsely, only the locks.
+  - A lock reverts at the next step's start (before that step's note), only if that step has no
+    lock in the lane, and only if the value actually changes. MIDI keeps the last value, so
+    without the revert one lock would change the sound for good.
+  - Continuous automation lanes run alongside. Where a lock and a curve target the same
+    parameter, the lock wins for its step, then the curve resumes from its current value.
+  - Wire order at the same instant: notes, then locks, then curve points. Curve points may be
+    thinned when the wire is busy, never sent late. Slides and curves send at tick rate.
+  - Open: curves per pattern, or per track across patterns (long builds).
 
 Consequence: the core must make new ideas cheap to try. Extensibility is a first-class requirement.
 
@@ -162,6 +176,7 @@ then removed from this list.
 (empty)
 
 ## Changelog
+- 0.28 (2026-11-18): Direction recorded: step data as lanes with parameter locks and automation.
 - 0.27 (2026-11-18): Card reflashed as seqpi with read-only root and `/data`; engine and configs
   moved to `/data/seq` (owner's choice); card layout and boot settings recorded.
 - 0.26 (2026-11-18): Services, clean shutdown and deploy script recorded; notes item (rtpmidid
