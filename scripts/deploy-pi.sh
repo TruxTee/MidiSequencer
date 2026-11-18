@@ -11,7 +11,7 @@ ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 SSH=(ssh -o BatchMode=yes "$PI")
 
 if [[ "${1:-}" == "--rollback" ]]; then
-  "${SSH[@]}" 'cd ~/seq/engine && test -f seq-engine.prev && mv seq-engine seq-engine.bad && mv seq-engine.prev seq-engine && mv seq-engine.bad seq-engine.prev && sudo systemctl restart seq-engine && systemctl is-active seq-engine'
+  "${SSH[@]}" 'cd /data/seq/engine && test -f seq-engine.prev && mv seq-engine seq-engine.bad && mv seq-engine.prev seq-engine && mv seq-engine.bad seq-engine.prev && sync && sudo systemctl restart seq-engine && systemctl is-active seq-engine'
   exit
 fi
 
@@ -27,21 +27,36 @@ cd "$ROOT/engine"
 cargo zigbuild -q --release --target arm-unknown-linux-gnueabihf.2.41
 BIN=target/arm-unknown-linux-gnueabihf/release/seq-engine
 
-"${SSH[@]}" 'mkdir -p ~/seq/engine ~/seq/profiles'
-scp -q "$BIN" "$PI:seq/engine/seq-engine.new"
-scp -q routing.json "$PI:seq/engine/"
-scp -q "$ROOT/profiles/"*.json "$PI:seq/profiles/"
-scp -q "$ROOT/pi/rtpmidid.ini" "$ROOT/pi/rtpmidid.service" "$ROOT/pi/seq-engine.service" "$PI:/tmp/"
-"${SSH[@]}" 'set -e
-  cd ~/seq/engine && chmod +x seq-engine.new
-  if [ -f seq-engine ]; then mv seq-engine seq-engine.prev; fi
-  mv seq-engine.new seq-engine
-  mv /tmp/rtpmidid.ini ~/seq/rtpmidid.ini
+# Everything deployable lives on the data partition (/data/seq); the root filesystem is
+# read-only. Files are uploaded next to their targets and renamed into place, so a power cut
+# mid-deploy leaves each file old or new, never half written.
+D=/data/seq
+"${SSH[@]}" "mkdir -p $D/engine $D/profiles $D/incoming"
+scp -q "$BIN" routing.json "$ROOT/profiles/"*.json \
+  "$ROOT/pi/rtpmidid.ini" "$ROOT/pi/rtpmidid.service" "$ROOT/pi/seq-engine.service" "$PI:$D/incoming/"
+"${SSH[@]}" "set -e
+  cd $D/incoming
+  chmod +x seq-engine
+  sync
+  if [ -f ../engine/seq-engine ]; then ln -f ../engine/seq-engine ../engine/seq-engine.prev; fi
+  mv seq-engine routing.json ../engine/
+  mv rtpmidid.ini ../
+  for p in *.json; do mv \"\$p\" ../profiles/; done
+  sync
+  # Units sit on the root filesystem: only touched when they changed.
+  changed=0
   for u in rtpmidid seq-engine; do
-    sudo install -m644 /tmp/$u.service /etc/systemd/system/$u.service
+    if ! cmp -s \$u.service /etc/systemd/system/\$u.service; then
+      if [ \"\$(findmnt -no FSTYPE /)\" = overlay ]; then
+        echo \"\$u.service changed but the root filesystem is read-only; unit not updated\" >&2
+        exit 1
+      fi
+      sudo install -m644 \$u.service /etc/systemd/system/\$u.service
+      changed=1
+    fi
+    rm \$u.service
   done
-  sudo systemctl daemon-reload
-  sudo systemctl enable -q rtpmidid seq-engine
+  if [ \$changed = 1 ]; then sudo systemctl daemon-reload; sudo systemctl enable -q rtpmidid seq-engine; fi
   sudo systemctl restart rtpmidid seq-engine
   sleep 2
-  systemctl is-active rtpmidid seq-engine'
+  systemctl is-active rtpmidid seq-engine"

@@ -2,10 +2,12 @@
 Description=rtpmidid: network MIDI (RTP-MIDI) for the sequencer
 Wants=network-online.target avahi-daemon.service
 After=network-online.target avahi-daemon.service sound.target
+# The config lives on the data partition; the root filesystem is read-only.
+RequiresMountsFor=/data
 
 [Service]
 User=flo
-ExecStart=/usr/local/bin/rtpmidid --ini /home/flo/seq/rtpmidid.ini
+ExecStart=/usr/local/bin/rtpmidid --ini /data/seq/rtpmidid.ini
 RuntimeDirectory=rtpmidid
 Restart=always
 RestartSec=1

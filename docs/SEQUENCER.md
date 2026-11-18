@@ -1,6 +1,6 @@
 # MIDI Sequencer — Design Document
 
-**Version:** 0.26
+**Version:** 0.27
 **Stage:** Build, opened by the owner on 2026-11-18. Scope: Milestone 1.
 Any return to discussion pauses building until the owner reopens the build stage.
 
@@ -97,11 +97,26 @@ Consequence: the core must make new ideas cheap to try. Extensibility is a first
 - **Power-cut safety:** Power can be lost at any moment (live on stage). The OS runs from a
   read-only root filesystem. Patterns and settings live on a separate data partition; every save
   writes a new file and atomically renames it over the old one. A cut leaves old or new, never half.
+  Card layout (seqpi, Pi OS Lite 32-bit trixie, set up 2026-11-18): p1 boot 512 MiB, p2 root
+  6 GiB read-only, p3 `/data` (label `seqdata`, ext4, rest of the card, writable).
+  - Root runs under overlayroot (`overlayroot=tmpfs:recurse=0` in `cmdline.txt`). `recurse=0`
+    is required: the default also overlays `/data`, and saves would vanish on reboot.
+  - To make root writable for maintenance, copy `cmdline.txt.rw` over `cmdline.txt` on the boot
+    partition and reboot. raspi-config cannot switch it off because of the `:recurse=0` suffix.
+  - Off: cloud-init, the swap file (zram only, `/etc/rpi/swap.conf.d/90-seq.conf`), apt and
+    man-db timers. Journal in RAM, at most 16 MB.
+  - Fresh card: remove ` resize` from `cmdline.txt` before first boot so root stays small, then
+    grow p2 to 6 GiB online and create p3.
+  - Boot to services running: 1 min 51 s, of which NetworkManager takes 63 s.
 - **Autosave and resume:** A few seconds after the last edit, the engine saves its full state.
   After a power cut it boots back to exactly that state, transport stopped, ready to play.
   At most the last few seconds of tweaks are lost.
 - **Deploy:** `scripts/deploy-pi.sh` cross-compiles, copies the engine to the Pi over SSH (same LAN),
   keeps the previous binary as `seq-engine.prev`, installs config and units from `pi/`, restarts.
+  Engine, routing, profiles, rtpmidid config and state all live in `/data/seq`, so deploys work
+  with root read-only. Each file is uploaded next to its target and renamed into place.
+  The units sit on root: the script updates them only when they changed, and refuses while
+  root is read-only.
   `scripts/deploy-pi.sh --rollback` swaps the previous binary back.
   Services `rtpmidid` and `seq-engine` (systemd, user flo) start at boot and restart 1 s after a
   crash. On SIGTERM the engine sends MIDI Stop, releases notes and saves before it exits.
@@ -147,6 +162,8 @@ then removed from this list.
 (empty)
 
 ## Changelog
+- 0.27 (2026-11-18): Card reflashed as seqpi with read-only root and `/data`; engine and configs
+  moved to `/data/seq` (owner's choice); card layout and boot settings recorded.
 - 0.26 (2026-11-18): Services, clean shutdown and deploy script recorded; notes item (rtpmidid
   silent-session timeout) done.
 - 0.25 (2026-11-18): Notes list for small approved jobs; first entry: rtpmidid silent-session timeout.

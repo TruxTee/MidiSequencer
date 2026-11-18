@@ -3,11 +3,13 @@ Description=Sequencer engine
 # Ports come and go at runtime and the engine reconnects, so rtpmidid is wanted, not required.
 Wants=rtpmidid.service
 After=rtpmidid.service
+# Engine, configs and state live on the data partition; the root filesystem is read-only.
+RequiresMountsFor=/data
 
 [Service]
 User=flo
-WorkingDirectory=/home/flo/seq/engine
-ExecStart=/home/flo/seq/engine/seq-engine --state /home/flo/seq/state.json --routing /home/flo/seq/engine/routing.json --profile /home/flo/seq/profiles/pcr32.json
+WorkingDirectory=/data/seq/engine
+ExecStart=/data/seq/engine/seq-engine --state /data/seq/state.json --routing /data/seq/engine/routing.json --profile /data/seq/profiles/pcr32.json
 # SIGTERM: the engine sends MIDI Stop, releases notes and saves before it exits.
 TimeoutStopSec=5
 Restart=always
