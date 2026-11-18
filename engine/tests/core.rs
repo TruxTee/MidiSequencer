@@ -208,3 +208,14 @@ fn autosave_waits_for_quiet_but_not_forever() {
     }
     assert!(b.due(10_000 * MS));
 }
+
+#[test]
+fn midi_bytes_follow_the_spec() {
+    use seq_engine::midi::encode;
+    assert_eq!(encode(Event::NoteOn { track: 0, note: 60, velocity: 100 }, 1), ([0x90, 60, 100], 3));
+    assert_eq!(encode(Event::NoteOff { track: 2, note: 64 }, 16), ([0x8F, 64, 0], 3));
+    assert_eq!(encode(Event::NoteOn { track: 0, note: 60, velocity: 100 }, 0), ([0x90, 60, 100], 3)); // channel clamped
+    assert_eq!(encode(Event::Clock, 5).0[0], 0xF8);
+    assert_eq!(encode(Event::Start, 5).0[0], 0xFA);
+    assert_eq!(encode(Event::Stop, 5).0[0], 0xFC);
+}
