@@ -1,6 +1,6 @@
 # MIDI Sequencer — Design Document
 
-**Version:** 0.22
+**Version:** 0.23
 **Stage:** Build, opened by the owner on 2026-11-18. Scope: Milestone 1.
 Any return to discussion pauses building until the owner reopens the build stage.
 
@@ -119,8 +119,17 @@ Hardware details (BCR32 included) are unknown, so the engine never sees raw devi
 - **Feedback:** the same profile maps engine values back to the device (rings, display).
 - **Output:** the engine plays to named instruments; a routing file maps each to a port and channel.
 - Profiles are data files, not code. PCR32's profile is written now; the BCR32's when it arrives.
+- **PCR32 MIDI map** (`profiles/pcr32.json`; a BCR32 CTRL preset will be programmed to match):
+  all CC on channel 16. Encoder turn CC 1–32 (relative, two's complement), encoder push CC 33–64,
+  parameter buttons B5–B20 CC 65–80, track buttons CC 81–84, rec/mixer/reset/start-stop CC 85–88,
+  footswitches CC 89–90. Press = 127, release = 0. Feedback returns on the same CC:
+  ring = absolute value, lights = 127/0.
+- **Milestone 1 surface behaviour:** track buttons select the track; PITCH (B5) is the only active
+  parameter; encoder turn sets step note; encoder push toggles step on/off; start/stop and
+  footswitch 1 toggle transport. Other controls are shown but inactive.
 
 ## Changelog
+- 0.23 (2026-11-18): PCR32 MIDI map and Milestone 1 surface behaviour recorded.
 - 0.22 (2026-11-18): BCR32 control set researched and recorded (corrects earlier "4 buttons").
 - 0.21 (2026-11-18): Build stage opened by the owner.
 - 0.20 (2026-11-18): Version control: single local repo, GitHub remote later.
