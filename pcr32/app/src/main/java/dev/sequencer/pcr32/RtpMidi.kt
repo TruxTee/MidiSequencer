@@ -117,7 +117,9 @@ class RtpMidiSession(
     private val onMidi: (ByteArray) -> Unit,
     private val onState: (String) -> Unit,
 ) {
-    private val ssrc = Random.nextInt()
+    // New for every session: rtpmidid finds sessions by SSRC, and with a reused one it answers
+    // to the address of an older, dead session.
+    private var ssrc = Random.nextInt()
     private val t0 = System.nanoTime()
     private var control: DatagramSocket? = null
     private var data: DatagramSocket? = null
@@ -133,6 +135,7 @@ class RtpMidiSession(
     /** Blocks until the host accepts both ports or the attempt fails. Call off the UI thread. */
     fun connect(hostName: String, port: Int): Boolean {
         close()
+        ssrc = Random.nextInt()
         val addr = InetAddress.getByName(hostName)
         val c = DatagramSocket(0)
         val d = bindDataNextTo(c) ?: run { c.close(); onState("no local ports"); return false }
@@ -237,9 +240,12 @@ class RtpMidiSession(
     fun close() {
         val h = host
         val c = control
-        if (running && h != null && c != null) {
+        val d = data
+        if (running && h != null && c != null && d != null) {
+            // Goodbye on both ports: rtpmidid keeps the session (and its ALSA port) until both close.
             val by = RtpCodec.exchange(RtpCodec.BY, 0, ssrc)
             try { c.send(DatagramPacket(by, by.size, h)) } catch (_: Exception) {}
+            try { d.send(DatagramPacket(by, by.size, InetSocketAddress(h.address, h.port + 1))) } catch (_: Exception) {}
         }
         running = false
         liveness.reset()
