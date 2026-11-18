@@ -36,41 +36,45 @@ pub struct Outputs {
 }
 
 impl Outputs {
-    /// Opens every port named in the routing. A missing port is reported and its
-    /// instruments stay silent; the engine keeps running.
-    pub fn open(routing: &Routing) -> (Outputs, Vec<String>) {
+    /// Opens the resolved port of each track (see `ports::wiring`); tracks sharing a port share
+    /// one connection. A missing port is reported and its track stays silent.
+    pub fn open(routing: &Routing, ports: &[Option<String>; TRACKS]) -> (Outputs, Vec<String>) {
         let mut warnings = Vec::new();
         let mut opened: Vec<(String, midir::MidiOutputConnection)> = Vec::new();
         let mut tracks = [None; TRACKS];
         for (t, inst) in routing.instruments.iter().take(TRACKS).enumerate() {
-            let want = inst.port.to_lowercase();
-            if let Some(i) = opened.iter().position(|(n, _)| n.to_lowercase().contains(&want)) {
-                tracks[t] = Some((i, inst.channel.clamp(1, 16)));
+            let Some(name) = &ports[t] else {
+                warnings.push(format!("{}: no port matching '{}'", inst.name, inst.port));
+                continue;
+            };
+            let channel = inst.channel.clamp(1, 16);
+            if let Some(i) = opened.iter().position(|(n, _)| n == name) {
+                tracks[t] = Some((i, channel));
                 continue;
             }
             let Ok(out) = midir::MidiOutput::new("seq-engine") else {
                 warnings.push("MIDI system unavailable".into());
                 break;
             };
-            let port = out.ports().into_iter().find(|p| {
-                out.port_name(p).map(|n| n.to_lowercase().contains(&want)).unwrap_or(false)
-            });
-            match port {
-                None => warnings.push(format!("{}: no port matching '{}'", inst.name, inst.port)),
-                Some(p) => {
-                    let name = out.port_name(&p).unwrap_or_default();
-                    match out.connect(&p, "seq-engine") {
-                        Ok(c) => {
-                            tracks[t] = Some((opened.len(), inst.channel.clamp(1, 16)));
-                            opened.push((name, c));
-                        }
-                        Err(e) => warnings.push(format!("{}: cannot open '{}': {e}", inst.name, name)),
-                    }
+            let Some(port) = out.ports().into_iter().find(|p| out.port_name(p).ok().as_ref() == Some(name)) else {
+                warnings.push(format!("{}: port '{name}' vanished", inst.name));
+                continue;
+            };
+            match out.connect(&port, "seq-engine") {
+                Ok(c) => {
+                    tracks[t] = Some((opened.len(), channel));
+                    opened.push((name.clone(), c));
                 }
+                Err(e) => warnings.push(format!("{}: cannot open '{name}': {e}", inst.name)),
             }
         }
         let conns = opened.into_iter().map(|(_, c)| c).collect();
         (Outputs { conns, tracks }, warnings)
+    }
+
+    /// No ports: everything is dropped until the next `open`.
+    pub fn none() -> Outputs {
+        Outputs { conns: Vec::new(), tracks: [None; TRACKS] }
     }
 
     /// All Notes Off (CC 123) on every routed channel, so notes left hanging by a crash stop.
