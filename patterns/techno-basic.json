@@ -1,0 +1,663 @@
+{
+ "pattern": {
+  "tracks": [
+   {
+    "steps": [
+     {
+      "on": true,
+      "note": 36,
+      "velocity": 120
+     },
+     {
+      "on": false,
+      "note": 36,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 36,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 36,
+      "velocity": 100
+     },
+     {
+      "on": true,
+      "note": 36,
+      "velocity": 120
+     },
+     {
+      "on": false,
+      "note": 36,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 36,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 36,
+      "velocity": 100
+     },
+     {
+      "on": true,
+      "note": 36,
+      "velocity": 120
+     },
+     {
+      "on": false,
+      "note": 36,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 36,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 36,
+      "velocity": 100
+     },
+     {
+      "on": true,
+      "note": 36,
+      "velocity": 120
+     },
+     {
+      "on": false,
+      "note": 36,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 36,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 36,
+      "velocity": 100
+     },
+     {
+      "on": true,
+      "note": 36,
+      "velocity": 120
+     },
+     {
+      "on": false,
+      "note": 36,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 36,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 36,
+      "velocity": 100
+     },
+     {
+      "on": true,
+      "note": 36,
+      "velocity": 120
+     },
+     {
+      "on": false,
+      "note": 36,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 36,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 36,
+      "velocity": 100
+     },
+     {
+      "on": true,
+      "note": 36,
+      "velocity": 120
+     },
+     {
+      "on": false,
+      "note": 36,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 36,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 36,
+      "velocity": 100
+     },
+     {
+      "on": true,
+      "note": 36,
+      "velocity": 120
+     },
+     {
+      "on": false,
+      "note": 36,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 36,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 36,
+      "velocity": 100
+     }
+    ]
+   },
+   {
+    "steps": [
+     {
+      "on": false,
+      "note": 39,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 39,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 39,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 39,
+      "velocity": 100
+     },
+     {
+      "on": true,
+      "note": 39,
+      "velocity": 110
+     },
+     {
+      "on": false,
+      "note": 39,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 39,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 39,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 39,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 39,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 39,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 39,
+      "velocity": 100
+     },
+     {
+      "on": true,
+      "note": 39,
+      "velocity": 110
+     },
+     {
+      "on": false,
+      "note": 39,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 39,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 39,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 39,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 39,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 39,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 39,
+      "velocity": 100
+     },
+     {
+      "on": true,
+      "note": 39,
+      "velocity": 110
+     },
+     {
+      "on": false,
+      "note": 39,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 39,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 39,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 39,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 39,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 39,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 39,
+      "velocity": 100
+     },
+     {
+      "on": true,
+      "note": 39,
+      "velocity": 110
+     },
+     {
+      "on": false,
+      "note": 39,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 39,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 39,
+      "velocity": 100
+     }
+    ]
+   },
+   {
+    "steps": [
+     {
+      "on": true,
+      "note": 42,
+      "velocity": 90
+     },
+     {
+      "on": true,
+      "note": 42,
+      "velocity": 65
+     },
+     {
+      "on": false,
+      "note": 42,
+      "velocity": 100
+     },
+     {
+      "on": true,
+      "note": 42,
+      "velocity": 65
+     },
+     {
+      "on": true,
+      "note": 42,
+      "velocity": 90
+     },
+     {
+      "on": true,
+      "note": 42,
+      "velocity": 65
+     },
+     {
+      "on": false,
+      "note": 42,
+      "velocity": 100
+     },
+     {
+      "on": true,
+      "note": 42,
+      "velocity": 65
+     },
+     {
+      "on": true,
+      "note": 42,
+      "velocity": 90
+     },
+     {
+      "on": true,
+      "note": 42,
+      "velocity": 65
+     },
+     {
+      "on": false,
+      "note": 42,
+      "velocity": 100
+     },
+     {
+      "on": true,
+      "note": 42,
+      "velocity": 65
+     },
+     {
+      "on": true,
+      "note": 42,
+      "velocity": 90
+     },
+     {
+      "on": true,
+      "note": 42,
+      "velocity": 65
+     },
+     {
+      "on": false,
+      "note": 42,
+      "velocity": 100
+     },
+     {
+      "on": true,
+      "note": 42,
+      "velocity": 65
+     },
+     {
+      "on": true,
+      "note": 42,
+      "velocity": 90
+     },
+     {
+      "on": true,
+      "note": 42,
+      "velocity": 65
+     },
+     {
+      "on": false,
+      "note": 42,
+      "velocity": 100
+     },
+     {
+      "on": true,
+      "note": 42,
+      "velocity": 65
+     },
+     {
+      "on": true,
+      "note": 42,
+      "velocity": 90
+     },
+     {
+      "on": true,
+      "note": 42,
+      "velocity": 65
+     },
+     {
+      "on": false,
+      "note": 42,
+      "velocity": 100
+     },
+     {
+      "on": true,
+      "note": 42,
+      "velocity": 65
+     },
+     {
+      "on": true,
+      "note": 42,
+      "velocity": 90
+     },
+     {
+      "on": true,
+      "note": 42,
+      "velocity": 65
+     },
+     {
+      "on": false,
+      "note": 42,
+      "velocity": 100
+     },
+     {
+      "on": true,
+      "note": 42,
+      "velocity": 65
+     },
+     {
+      "on": true,
+      "note": 42,
+      "velocity": 90
+     },
+     {
+      "on": true,
+      "note": 42,
+      "velocity": 65
+     },
+     {
+      "on": false,
+      "note": 42,
+      "velocity": 100
+     },
+     {
+      "on": true,
+      "note": 42,
+      "velocity": 65
+     }
+    ]
+   },
+   {
+    "steps": [
+     {
+      "on": false,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": true,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": true,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": true,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": true,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": true,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": true,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": true,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": true,
+      "note": 46,
+      "velocity": 100
+     },
+     {
+      "on": false,
+      "note": 46,
+      "velocity": 100
+     }
+    ]
+   }
+  ]
+ },
+ "bpm_milli": 130000
+}
