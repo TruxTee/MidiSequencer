@@ -1,6 +1,6 @@
 # MIDI Sequencer — Design Document
 
-**Version:** 0.28
+**Version:** 0.29
 **Stage:** Build, opened by the owner on 2026-11-18. Scope: Milestone 1.
 Any return to discussion pauses building until the owner reopens the build stage.
 
@@ -59,6 +59,16 @@ Known directions:
   - Wire order at the same instant: notes, then locks, then curve points. Curve points may be
     thinned when the wire is busy, never sent late. Slides and curves send at tick rate.
   - Open: curves per pattern, or per track across patterns (long builds).
+- Harmony (direction agreed 2026-11-18, not scheduled; the owner is not a trained musician):
+  - Default pitch entry by scale degree. A step stores a degree, so changing scale or root
+    re-harmonises the whole pattern. Scales stored as 12-bit masks; a mode is a rotation.
+  - An accidental lane (-1, 0, +1 semitone) moves single steps out of the scale. Played pitch =
+    degree's pitch + accidental + transpose. It is relative: after a key change a step stays
+    "a semitone above degree n". Where the scale has a semitone step, +1 lands on a scale note.
+  - A raw MIDI note mode stays available as a switch, for typing exact pitches.
+  - Owner likes: a harmonic density control in the style of Mutable Instruments Marbles STEPS
+    (from chromatic, remove notes until only the scale, then only its strongest degrees), and
+    keyboard transpose (hold a key to transpose the running sequence live).
 
 Consequence: the core must make new ideas cheap to try. Extensibility is a first-class requirement.
 
@@ -176,6 +186,7 @@ then removed from this list.
 (empty)
 
 ## Changelog
+- 0.29 (2026-11-18): Harmony direction recorded: degree entry, accidental lane, density control, keyboard transpose.
 - 0.28 (2026-11-18): Direction recorded: step data as lanes with parameter locks and automation.
 - 0.27 (2026-11-18): Card reflashed as seqpi with read-only root and `/data`; engine and configs
   moved to `/data/seq` (owner's choice); card layout and boot settings recorded.
